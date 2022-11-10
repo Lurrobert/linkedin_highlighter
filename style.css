@@ -1,0 +1,12 @@
+[title]:hover {
+  text-decoration: underline;
+}
+
+[title=""]:hover {
+  text-decoration: none;
+}
+
+#tt:hover {
+  box-shadow: 0px 0px 4px 0px rgba(0, 0, 0, 0.75);
+  color: rgb(3, 26, 49);
+}

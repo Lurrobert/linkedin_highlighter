@@ -1,0 +1,57 @@
+{
+    "name":"linkedin highligheter",
+    "version": "0.0.1",
+    "manifest_version": 3,
+    "icons": {
+        "128": "Y.png"
+     },
+    "action" : {
+        "default_title": "ext13",
+        "default_popup": "popup.html"
+    },
+    
+    "background": {
+        "service_worker": "background.js"
+    },
+
+    "commands": {
+        "highlight_text": {
+          "suggested_key": {
+            "mac": "Command+K",
+            "default": "Ctrl+K"
+          },
+          "description": "Highlight Selected Text"
+        },
+        "clear_storage": {
+          "suggested_key": {
+            "mac": "Command+Shift+A",
+            "default": "Ctrl+Shift+A"
+          },
+          "description": "Clear highlights for current URL"
+        }
+      },
+    
+    "content_scripts": [
+        {
+            "matches": ["https://*.linkedin.com/*"],
+            "css": ["style.css"],
+            "js": ["jquery-3.6.0.min.js","content.js"]
+        }
+    ],
+
+    "permissions": ["storage", "declarativeContent", "activeTab", "scripting"],
+    
+
+    "web_accessible_resources": [{
+        "resources": [
+            "style.css",
+            "content.js",
+            "injection_script.js",
+            "popup.html",
+            "jquery-3.6.0.min.js",
+            "clear_storage.js",
+            "popup.js"
+        ],
+        "matches": ["<all_urls>"]
+    }]
+}
