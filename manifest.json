@@ -39,7 +39,8 @@
         }
     ],
 
-    "permissions": ["storage", "declarativeContent", "activeTab", "scripting"],
+    "permissions": ["storage", "declarativeContent", "activeTab", "scripting", "<all_urls>"],
+    "host_permissions": ["<all_urls>"],
     
 
     "web_accessible_resources": [{

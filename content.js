@@ -8,118 +8,133 @@ var resp = { //response object
   data: undefined
 }
 
+async function getRelevancyScores(body) {
+  // body = {"vitae": experience, "reqs": reqs}
+  console.log(JSON.stringify(body));
+  const response = await fetch("http://127.0.0.1:8000/relevant_score", {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body),
+  });
 
+  response.json().then(data => {
+    console.log(data);
+  });
+}
 
 chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
   if (msg.todo == "auto_extraction") {
-    experience = extractExperience(); //to add some spice
+    item = {
+      vitae: extractExperience()
+    };
     console.log("Extracted data");
+    chrome.storage.local.set(item, function () {
+      console.log("Stored vitae in storage", item);
+    });
+
+    chrome.storage.local.get("notepad", results => {
+      item['reqs'] = results['notepad']
+      console.log("Stored data:", item);
+      getRelevancyScores(item);
+    });
   }
 });
 
-
-
-function sleep(milliseconds) {
-  const date = Date.now();
-  let currentDate = null;
-  do {
-    currentDate = Date.now();
-  } while (currentDate - date < milliseconds);
-}
-
-
 //module for extracting the details
 function extract() {
-    /// vars go below this
-    var userProfile = {};
+  /// vars go below this
+  var userProfile = {};
 
-    // vars end here
+  // vars end here
 
-      //////////////
+  //////////////
 
-    // retreiving profile Section data
-    const profileSection = document.querySelector(".pv-top-card");
-    
-    const fullNameElement = profileSection?.querySelector('h1')
-    const fullName = fullNameElement?.textContent || null
+  // retreiving profile Section data
+  const profileSection = document.querySelector(".pv-top-card");
 
-    const titleElement = profileSection?.querySelector('.text-body-medium')
-    var title = titleElement?.textContent || null
+  const fullNameElement = profileSection?.querySelector('h1')
+  const fullName = fullNameElement?.textContent || null
 
-    var tbs = profileSection?.querySelectorAll(".text-body-small")
-    const locationElement = ((tbs) ? tbs[1] : null)
-    var loc = locationElement?.textContent || null
+  const titleElement = profileSection?.querySelector('.text-body-medium')
+  var title = titleElement?.textContent || null
 
-    const photoElement = document.querySelector(".pv-top-card-profile-picture__image") || profileSection?.querySelector('.profile-photo-edit__preview')
-    const photo = photoElement?.getAttribute('src') || null
+  var tbs = profileSection?.querySelectorAll(".text-body-small")
+  const locationElement = ((tbs) ? tbs[1] : null)
+  var loc = locationElement?.textContent || null
 
-    const descriptionElement = document.querySelector('div#about')?.parentElement.querySelector('.pv-shared-text-with-see-more > div > span.visually-hidden')// Is outside "profileSection"
-    var description = descriptionElement?.textContent || null
-        
+  const photoElement = document.querySelector(".pv-top-card-profile-picture__image") || profileSection?.querySelector('.profile-photo-edit__preview')
+  const photo = photoElement?.getAttribute('src') || null
 
-    const url = window.location.url;
-    var rawProfileData = {
-        fullName,
-        title,
-        loc,
-        photo,
-        description,
-        url
-    }
-
-    var profileData = {
-        fullName: getCleanText(rawProfileData.fullName),
-        title: getCleanText(rawProfileData.title),
-        location: getCleanText(rawProfileData.loc),
-        description: getCleanText(rawProfileData.description),
-        photo: rawProfileData.photo,
-        url: rawProfileData.url
-    }
-    ///extraction of profile data ends here///
-    // extracting education section
-    var nodes = $("#education-section ul > .ember-view");
-    let education = [];
-
-    for (const node of nodes) {
-
-        const schoolNameElement = node.querySelector('h3.pv-entity__school-name');
-        var schoolName = schoolNameElement?.textContent || null;
-        schoolName = getCleanText(schoolName);
-
-        const degreeNameElement = node.querySelector('.pv-entity__degree-name .pv-entity__comma-item');
-        var degreeName = degreeNameElement?.textContent || null;
-        degreeName = getCleanText(degreeName);
-
-        const fieldOfStudyElement = node.querySelector('.pv-entity__fos .pv-entity__comma-item');
-        var fieldOfStudy = fieldOfStudyElement?.textContent || null;
-        fieldOfStudy = getCleanText(fieldOfStudy);
-
-        // const gradeElement = node.querySelector('.pv-entity__grade .pv-entity__comma-item');
-        // const grade = (gradeElement && gradeElement.textContent) ? window.getCleanText(fieldOfStudyElement.textContent) : null;
-
-        const dateRangeElement = node.querySelectorAll('.pv-entity__dates time');
-
-        const startDatePart = dateRangeElement && dateRangeElement[0]?.textContent || null;
-        const startDate = startDatePart || null
-
-        const endDatePart = dateRangeElement && dateRangeElement[1]?.textContent || null;
-        const endDate = endDatePart || null
-        
-        education.push({
-        schoolName,
-        degreeName,
-        fieldOfStudy,
-        startDate,
-        endDate
-      })
-    }
-    //extraction of education ends here
+  const descriptionElement = document.querySelector('div#about')?.parentElement.querySelector('.pv-shared-text-with-see-more > div > span.visually-hidden')// Is outside "profileSection"
+  var description = descriptionElement?.textContent || null
 
 
-   ///extraction of accomplishments (courses, test scores, projects,
-   ///                               Languages, honor-awards)
+  const url = window.location.url;
+  var rawProfileData = {
+    fullName,
+    title,
+    loc,
+    photo,
+    description,
+    url
+  }
 
-   //first, extract out the array of nodes containing different sections
+  var profileData = {
+    fullName: getCleanText(rawProfileData.fullName),
+    title: getCleanText(rawProfileData.title),
+    location: getCleanText(rawProfileData.loc),
+    description: getCleanText(rawProfileData.description),
+    photo: rawProfileData.photo,
+    url: rawProfileData.url
+  }
+  ///extraction of profile data ends here///
+  // extracting education section
+  var nodes = $("#education-section ul > .ember-view");
+  let education = [];
+
+  for (const node of nodes) {
+
+    const schoolNameElement = node.querySelector('h3.pv-entity__school-name');
+    var schoolName = schoolNameElement?.textContent || null;
+    schoolName = getCleanText(schoolName);
+
+    const degreeNameElement = node.querySelector('.pv-entity__degree-name .pv-entity__comma-item');
+    var degreeName = degreeNameElement?.textContent || null;
+    degreeName = getCleanText(degreeName);
+
+    const fieldOfStudyElement = node.querySelector('.pv-entity__fos .pv-entity__comma-item');
+    var fieldOfStudy = fieldOfStudyElement?.textContent || null;
+    fieldOfStudy = getCleanText(fieldOfStudy);
+
+    // const gradeElement = node.querySelector('.pv-entity__grade .pv-entity__comma-item');
+    // const grade = (gradeElement && gradeElement.textContent) ? window.getCleanText(fieldOfStudyElement.textContent) : null;
+
+    const dateRangeElement = node.querySelectorAll('.pv-entity__dates time');
+
+    const startDatePart = dateRangeElement && dateRangeElement[0]?.textContent || null;
+    const startDate = startDatePart || null
+
+    const endDatePart = dateRangeElement && dateRangeElement[1]?.textContent || null;
+    const endDate = endDatePart || null
+
+    education.push({
+      schoolName,
+      degreeName,
+      fieldOfStudy,
+      startDate,
+      endDate
+    })
+  }
+  //extraction of education ends here
+
+
+  ///extraction of accomplishments (courses, test scores, projects,
+  ///                               Languages, honor-awards)
+
+  //first, extract out the array of nodes containing different sections
   var coursesection = document.querySelector(".courses");
   var projectsection = document.querySelector(".projects");
   var languagesection = document.querySelector(".languages");
@@ -130,9 +145,9 @@ function extract() {
 
   /////COURSES/////
   var courses = []
-  if(coursesection) { //if coursesection exists
+  if (coursesection) { //if coursesection exists
     var course_nodes = coursesection.querySelectorAll("div > ul > li") || null;
-    for(var nodo of course_nodes) {
+    for (var nodo of course_nodes) {
       var courseName = nodo.textContent;
       courses.push(
         getCleanText(courseName)
@@ -140,12 +155,12 @@ function extract() {
     }
   }
   /////COURSES EXTRACTION ENDS HERE/////
-  
+
   /////PROJECTS////
   var projects = []
-  if(projectsection) {
+  if (projectsection) {
     var project_nodes = projectsection.querySelectorAll("div > ul > li") || null;
-    for(var nodo of project_nodes) {
+    for (var nodo of project_nodes) {
       var projectName = nodo.textContent;
       projects.push(
         getCleanText(projectName)
@@ -157,9 +172,9 @@ function extract() {
 
   ////LANGUAGES EXTRACTION////
   var languages = []
-  if(languagesection) {
+  if (languagesection) {
     var lang_nodes = languagesection.querySelectorAll("div > ul > li") || null;
-    for(var nodo of lang_nodes) {
+    for (var nodo of lang_nodes) {
       var language = nodo.textContent;
       languages.push(
         getCleanText(language)
@@ -181,9 +196,9 @@ function extract() {
   ///VOLUNTEER EXPERIENCE EXTRACTION///
   let volunteer_experience = [];
   var volnodes = document.querySelectorAll('section.volunteering-section li');
-  if(volnodes) {
+  if (volnodes) {
 
-    for(var nodo of volnodes) {
+    for (var nodo of volnodes) {
       var vol_title = nodo.querySelector('h3')?.textContent || null;
       var vol_company = nodo.querySelector('h4')?.textContent.replace("Company Name", "") || null;
       var vol_location = nodo.querySelector('.pv-entity__location span:nth-child(2)')?.textContent || null;
@@ -206,13 +221,13 @@ function extract() {
 
   //add in the extracted object values here
   userProfile = {
-      "profileData": profileData,
-      "education": education,
-      "volunteer_experience": volunteer_experience,
-      "accomplishments" : accomplishments
+    "profileData": profileData,
+    "education": education,
+    "volunteer_experience": volunteer_experience,
+    "accomplishments": accomplishments
   }
 
-  
+
   return userProfile;
 }//Extract() functions ends here
 
@@ -225,33 +240,33 @@ function extractSkills() {
 
   var list = null;
   var skills = [];
-  
-  if(anchor1 && !document.getElementById('deepscan').checked) {
+
+  if (anchor1 && !document.getElementById('deepscan').checked) {
     anchor1 = anchor1.nextElementSibling.nextElementSibling
     list = anchor1.querySelector('ul').children;
   }
 
-  if(anchor2 && document.getElementById('deepscan').checked && location.href.includes('skills')) {
+  if (anchor2 && document.getElementById('deepscan').checked && location.href.includes('skills')) {
     list = anchor2.children;
   }
 
-  if(list) { //if the anchor exists
-    for(i=0; i<list.length; i++) {
+  if (list) { //if the anchor exists
+    for (i = 0; i < list.length; i++) {
       var elem = null;
       //var firstdiv = null;
 
-      if(anchor1 && !document.getElementById('deepscan').checked) {
+      if (anchor1 && !document.getElementById('deepscan').checked) {
         //alert("anchor1");
         elem = list[i].firstElementChild.firstElementChild.nextElementSibling
-                        .querySelectorAll('div');
-        
+          .querySelectorAll('div');
+
         var index = 0;
         elem = getCleanText(elem[index]?.querySelector('div > span > span').textContent || "");
-        
-        
+
+
       }// anchor1 ends here
       else if ((anchor1 == null) && anchor2 && document.getElementById('deepscan').checked &&
-      location.href.includes('skills')) {
+        location.href.includes('skills')) {
         elem = list[i].querySelector('div > div').nextElementSibling;
         elem = elem.firstElementChild.firstElementChild.children;
 
@@ -286,7 +301,6 @@ function extractSkills() {
 // Extract Experience /////
 
 function extractExperience() {
-  console.log("Running main scripptt");
   //defining anchors (roots from where scraping starts)
   var anchor1 = document.getElementById("experience");
   var anchor2 = document.querySelector('.pvs-list');
@@ -296,21 +310,21 @@ function extractExperience() {
   var roles = [];
   var company = "";
 
-  if(anchor1) {
+  if (anchor1) {
     anchor1 = anchor1.nextElementSibling.nextElementSibling;
     list = anchor1.querySelector('ul').children;
-  } 
+  }
 
-  if(anchor2 && location.href.includes('experience')) {
+  if (anchor2 && location.href.includes('experience')) {
     list = anchor2.children;
-  } 
-  
-  if(list) { //if the anchor exists
-    for(i=0; i<list.length; i++) {
+  }
+
+  if (list) { //if the anchor exists
+    for (i = 0; i < list.length; i++) {
       company = "";
       roles = [];
       var elem = list[i].querySelector('div > div').nextElementSibling; //for anchor 1
-      if(elem.querySelector('div > a:not([data-field="experience_media"])')) {
+      if (elem.querySelector('div > a:not([data-field="experience_media"])')) {
         // condition for multiple roles in same company
         company = elem.querySelector('div > a > div > span > span')?.textContent || "";
         company = getCleanText(company);
@@ -318,71 +332,32 @@ function extractExperience() {
         elem = elem.firstElementChild.nextElementSibling;
         var elems = elem.querySelector('ul').children
 
-        for(j=0; j < elems.length; j++) {
+        for (j = 0; j < elems.length; j++) {
           // traversing roles list in a company
           var keke = elems[j].querySelector("div > div")?.nextElementSibling || null;
           description = keke.querySelector('div > .pvs-list__outer-container')?.textContent || "";
           keke = keke.querySelector('div > a');
 
           kchilds = keke.children;
-          var rname=" ", startDate=" ", endDate=" ", loc=" ";
-          for(k=0; k<kchilds.length; k++) {
+          var rname = " ", startDate = " ", endDate = " ", loc = " ";
+          for (k = 0; k < kchilds.length; k++) {
 
             //each role's details taken
-            if(k==0) //role name
+            if (k == 0) //role name
               rname = kchilds[k]?.querySelector('span > span').textContent || "";
-            if(k==1) //role duration
-              {
-                var ta = kchilds[k].querySelector('span').textContent.split(/[-·]/);
-                startDate = ta[0];
-                endDate = ta[1];
-              }
-            if(k==2) //role location 
-              loc= kchilds[k].querySelector('span')?.textContent || ""; 
-              
-           } //kloop
+            if (k == 1) //role duration
+            {
+              var ta = kchilds[k].querySelector('span').textContent.split(/[-·]/);
+              startDate = ta[0];
+              endDate = ta[1];
+            }
+            if (k == 2) //role location 
+              loc = kchilds[k].querySelector('span')?.textContent || "";
 
-            roles.push({
-              'id': j,
-              'title': getCleanText(rname),
-              'startDate': getCleanText(startDate),
-              'endDate': getCleanText(endDate),
-              'location': getCleanText(loc),
-              'description': getCleanText(description) 
-            });
+          } //kloop
 
-        } // role traversal loop
-
-
-        } else { //condition when single role in one company
-          description = elem.querySelector('div > .pvs-list__outer-container')?.textContent || "";
-          elem = elem.querySelector('div > div > div > div');
-
-          echilds = elem.children;
-          var rname=" ", startDate=" ", endDate=" ", loc=" ";
-          for(k=0; k<echilds.length; k++) {
-
-            //each role's details taken
-            if(k==0) //role name
-              rname = echilds[k]?.querySelector('span > span').textContent || "";
-            if(k==2) //role duration
-              {
-                var ta = echilds[k].querySelector('span').textContent.split(/[-·]/);
-                startDate = ta[0];
-                endDate = ta[1];
-              }
-            if(k==3) //role location 
-              loc = echilds[k].querySelector('span')?.textContent || ""; 
-            
-            if(k==1) //role company title
-              company = echilds[k].querySelector('span')?.textContent || "";
-              if(company)
-                company = company.split(/[-·]/)[0];
-           } //kloop
-           
-
-           roles.push({
-            'id': 0,
+          roles.push({
+            'id': j,
             'title': getCleanText(rname),
             'startDate': getCleanText(startDate),
             'endDate': getCleanText(endDate),
@@ -390,20 +365,59 @@ function extractExperience() {
             'description': getCleanText(description)
           });
 
-       } //single role else condn ends
+        } // role traversal loop
 
-       a:
-       exp.push({
+
+      } else { //condition when single role in one company
+        description = elem.querySelector('div > .pvs-list__outer-container')?.textContent || "";
+        elem = elem.querySelector('div > div > div > div');
+
+        echilds = elem.children;
+        var rname = " ", startDate = " ", endDate = " ", loc = " ";
+        for (k = 0; k < echilds.length; k++) {
+
+          //each role's details taken
+          if (k == 0) //role name
+            rname = echilds[k]?.querySelector('span > span').textContent || "";
+          if (k == 2) //role duration
+          {
+            var ta = echilds[k].querySelector('span').textContent.split(/[-·]/);
+            startDate = ta[0];
+            endDate = ta[1];
+          }
+          if (k == 3) //role location 
+            loc = echilds[k].querySelector('span')?.textContent || "";
+
+          if (k == 1) //role company title
+            company = echilds[k].querySelector('span')?.textContent || "";
+          if (company)
+            company = company.split(/[-·]/)[0];
+        } //kloop
+
+
+        roles.push({
+          'id': 0,
+          'title': getCleanText(rname),
+          'startDate': getCleanText(startDate),
+          'endDate': getCleanText(endDate),
+          'location': getCleanText(loc),
+          'description': getCleanText(description)
+        });
+
+      } //single role else condn ends
+
+      a:
+      exp.push({
         'id': i,
         'company': company,
         'roles': roles
-       });
+      });
 
-      }//for loop over 'i' for each item in anchor list
+    }//for loop over 'i' for each item in anchor list
   } // if list anchor exists condition
-  console.log(JSON.stringify(exp));
+  // console.log(JSON.stringify(exp));
   return JSON.stringify(exp);
-//  document.getElementById('experiencetext').value = JSON.stringify(exp);
+  //  document.getElementById('experiencetext').value = JSON.stringify(exp);
 } //extract experience ends here
 
 
@@ -411,20 +425,20 @@ function extractExperience() {
 // Utility functions
 
 function getCleanText(text) {
-    const regexRemoveMultipleSpaces = / +/g
-    const regexRemoveLineBreaks = /(\r\n\t|\n|\r\t)/gm
-  
-    if (!text) return null
-  
-    const cleanText = text.toString()
-      .replace(regexRemoveLineBreaks, '')
-      .replace(regexRemoveMultipleSpaces, ' ')
-      .replace('...', '')
-      .replace('See more', '')
-      .replace('See less', '')
-      .trim()
-  
-    return cleanText
+  const regexRemoveMultipleSpaces = / +/g
+  const regexRemoveLineBreaks = /(\r\n\t|\n|\r\t)/gm
+
+  if (!text) return null
+
+  const cleanText = text.toString()
+    .replace(regexRemoveLineBreaks, '')
+    .replace(regexRemoveMultipleSpaces, ' ')
+    .replace('...', '')
+    .replace('See more', '')
+    .replace('See less', '')
+    .trim()
+
+  return cleanText
 }
 
 
@@ -461,7 +475,7 @@ function createHighlightObj() {
   // active = {
   //   active: true
   // };
-  chrome.storage.local.set({ highlights }, () => {});
+  chrome.storage.local.set({ highlights }, () => { });
   // chrome.storage.local.get("active", results => {});
   return;
 }
@@ -486,9 +500,9 @@ function applyHighlights(pageHighlights) {
           nodeList[i].innerHTML = nodeList[i].innerHTML.replace(
             key,
             `<span style="background-color: ${pageHighlights["color"] ||
-              "#CFFFDF"};" class="el" title="${note}">` +
-              key +
-              "</span>"
+            "#CFFFDF"};" class="el" title="${note}">` +
+            key +
+            "</span>"
           );
         }
       }
@@ -517,7 +531,7 @@ function addPromptToTargets() {
           highlight = highlights[url][nodes[i].innerHTML];
           highlight[3] = note;
           nodes[i].title = note;
-          chrome.storage.local.set({ highlights }, () => {});
+          chrome.storage.local.set({ highlights }, () => { });
         });
       }
     };

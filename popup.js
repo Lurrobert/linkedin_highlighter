@@ -16,20 +16,19 @@ chrome.tabs.query({
   active: true,
   currentWindow: true
 }, function (tab) {
-  chrome.tabs.sendMessage(tab[0].id, {
+  // in the context of the extension as the window
+  document.querySelector('#buttony').addEventListener('click', function(){
+    // send to the html page context todo
+    chrome.tabs.sendMessage(tab[0].id, {
       todo: "auto_extraction"
+    })
   });
-  chrome.tabs.onUpdated.addListener(function () {
-      chrome.tabs.sendMessage(tab[0].id, {
-          todo: "auto_extraction"
-      });
-  });
-});
+})
 
 
-document.addEventListener('DOMContentLoaded', function () {
-    document.querySelector('button').addEventListener('click', extractExperience);      
-});
+// document.addEventListener('DOMContentLoaded', function () {
+//     document.querySelector('button').addEventListener('click', extractExperience);      
+// });
 
 function extractExperience() {
     //defining anchors (roots from where scraping starts)
